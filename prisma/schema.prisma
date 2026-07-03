@@ -1,0 +1,147 @@
+// 幾分 (jifen) — Prisma schema
+// Prisma 7 + Next.js 16 (Turbopack)：generator 必須維持 "prisma-client-js"（不要改成
+// "prisma-client"、不要加 output），生成回 node_modules/.prisma/client 才能被 Turbopack 解析。
+// datasource 不放 url（Prisma 7 已移除），連線字串改由 prisma.config.ts 提供。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─────────────────────────────────────────────
+// next-auth (Auth.js) 標準資料表
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+
+  // onboarding 後填入的分眾屬性
+  gender       String? // male | female | non_binary | prefer_not_to_say
+  ageRange     String? // 18-24 | 25-30 | 31-40 | 41-50 | 51+
+  region       String? // taipei | northern | central | southern | eastern | overseas
+  isVerified18 Boolean   @default(false)
+  onboardedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  photos       Photo[]
+  ratingsGiven Rating[]  @relation("RatingsGiven")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// 業務資料表
+// ─────────────────────────────────────────────
+
+model Photo {
+  id               String  @id @default(cuid())
+  userId           String
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storageKey       String // 本機儲存的檔名（DATA_DIR/uploads/<storageKey>）
+  mimeType         String  @default("image/jpeg")
+  label            String? // 例如「剪髮後」「妝後」
+  slot             Int     @default(0) // 0 = 主照片，1 = 對比照
+  status           String  @default("pending_review") // pending_review | active | rejected | flagged
+  moderationReason String?
+  isActive         Boolean @default(false) // 通過審核且進入評分池
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ratings Rating[]
+  batches ResultBatch[]
+
+  @@index([userId])
+  @@index([status, isActive])
+}
+
+model Rating {
+  id            String  @id @default(cuid())
+  raterId       String
+  rater         User    @relation("RatingsGiven", fields: [raterId], references: [id], onDelete: Cascade)
+  photoId       String
+  photo         Photo   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  score         Int? // 1..10；null 代表「不可評」
+  isUnevaluable Boolean @default(false)
+
+  // 評分者當下的分眾屬性快照（之後使用者改資料也不影響歷史聚合）
+  raterGender   String?
+  raterAgeRange String?
+  raterRegion   String?
+
+  // 此評分是否已被某次揭曉批次納入計算
+  countedBatchId String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([raterId, photoId])
+  @@index([photoId])
+  @@index([raterId])
+}
+
+model ResultBatch {
+  id             String   @id @default(cuid())
+  photoId        String
+  photo          Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  unlockedAt     DateTime @default(now())
+  totalRatings   Int
+  averageScore   Float
+  percentileRank Int // 0..100
+  confidence     String // low | medium | high
+
+  // 分眾結果以 JSON 字串保存（SQLite）
+  byGender String // DemographicBreakdown[]
+  byAge    String // DemographicBreakdown[]
+  byRegion String // DemographicBreakdown[]
+
+  createdAt DateTime @default(now())
+
+  @@index([photoId])
+}

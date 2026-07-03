@@ -1,0 +1,46 @@
+services:
+  app:
+    build: .
+    image: jifen
+    container_name: jifen
+    restart: unless-stopped
+    # 走 Cloudflare Tunnel 時不需對外開端口（VM 零開放端口最安全）。
+    # 若想直接用 IP:3000 測試，把下面 expose 改成 ports: ["3000:3000"]。
+    expose:
+      - "3000"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      DATABASE_URL: file:/app/data/jifen.db
+      TZ: Asia/Taipei
+    volumes:
+      # SQLite 資料庫與上傳圖片持久化於具名 volume
+      - jifen-data:/app/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Cloudflare Tunnel：把你的網域安全導向 app，VM 不必開放任何入站端口。
+  # 需在 .env.production 設定 TUNNEL_TOKEN；Public Hostname 的 Service 填 http://app:3000
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: jifen-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file:
+      - .env.production
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  jifen-data:

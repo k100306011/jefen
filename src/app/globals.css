@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
+@theme {
+  /* === 幾分 Design Tokens === */
+
+  /* Background / Surface */
+  --color-bg-base: #F4EFE7;
+  --color-bg-light: #FBF8F3;
+  --color-surface: #FFFFFF;
+  --color-border-warm: #EBE3D7;
+  --color-track: #EFE8DB;
+
+  /* Text */
+  --color-text-primary: #2C2926;
+  --color-text-secondary: #5C5248;
+  --color-text-tertiary: #7C7064;
+  --color-text-label: #9C8E7E;
+  --color-text-hint: #B0A496;
+
+  /* Data accent colors */
+  --color-rose: #E8628A;
+  --color-gold: #EBA63E;
+  --color-teal: #46C2A6;
+  --color-rose-deep: #D6356E;
+  --color-berry: #C0396B;
+
+  /* Growth pill */
+  --color-growth-text: #5E7A4E;
+  --color-growth-text-deep: #3F5634;
+  --color-growth-bg: #EAEFE2;
+
+  /* 注意：不要定義具名的 --spacing-xs/sm/md/...，否則 Tailwind v4 會讓
+     max-w-sm / max-w-2xl 等改用這些小數值，導致容器塌縮成直書。
+     數字版 spacing（p-5、gap-4）使用單一基準 --spacing（預設 0.25rem），不受影響。 */
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 13px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Font sizes */
+  --font-size-display: clamp(2.5rem, 8vw, 4rem);
+  --font-size-hero: clamp(1.75rem, 5vw, 2.5rem);
+  --font-size-h1: clamp(1.5rem, 4vw, 2rem);
+  --font-size-h2: 1.25rem;
+  --font-size-body: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.75rem;
+
+  /* Tailwind color overrides */
+  --color-background: var(--color-bg-base);
+  --color-foreground: var(--color-text-primary);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F4EFE7;
+  --foreground: #2C2926;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Disable dark mode override */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #F4EFE7;
+    --foreground: #2C2926;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grain texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* Utility classes for design system */
+.card-surface {
+  background: #FFFFFF;
+  border: 0.5px solid #EBE3D7;
+  border-radius: 20px;
+}
+
+.text-display {
+  font-size: var(--font-size-display);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-hero {
+  font-size: var(--font-size-hero);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.text-label-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-label);
+}
+
+.growth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--color-growth-bg);
+  color: var(--color-growth-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 9999px;
 }

@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# 幾分 — 本機資料（SQLite 資料庫與上傳檔案）
+/data/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -39,3 +42,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
