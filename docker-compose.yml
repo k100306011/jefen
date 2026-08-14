@@ -1,6 +1,11 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # 建置期注入（sitemap / OG 圖 / canonical 都吃這個值）。
+        # env_file 只在 runtime 生效，NEXT_PUBLIC_* 一定要走 build arg，換網域才會真的生效。
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://jifen.space}
     image: jifen
     container_name: jifen
     restart: unless-stopped
@@ -29,15 +34,28 @@ services:
       retries: 5
       start_period: 40s
 
-  # Cloudflare Tunnel：把你的網域安全導向 app，VM 不必開放任何入站端口。
-  # 需在 .env.production 設定 TUNNEL_TOKEN；Public Hostname 的 Service 填 http://app:3000
+  # 方式 A：TUNNEL_TOKEN（Cloudflare Dashboard → Docker 安裝指令取得）
   cloudflared:
+    profiles: ["tunnel"]
     image: cloudflare/cloudflared:latest
     container_name: jifen-tunnel
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     env_file:
       - .env.production
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # 方式 B：credentials + config.yml（scripts/cloudflare-tunnel-bootstrap.sh 產生）
+  cloudflared-creds:
+    profiles: ["tunnel-creds"]
+    image: cloudflare/cloudflared:latest
+    container_name: jifen-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
     depends_on:
       app:
         condition: service_healthy

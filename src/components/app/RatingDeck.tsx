@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { submitRating } from "@/lib/actions";
+import { submitRating, reportPhoto } from "@/lib/actions";
 
 interface QueueItem {
   id: string;
@@ -16,7 +16,8 @@ function ProgressBar({ given, needed }: { given: number; needed: number }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs" style={{ color: "#9C8E7E" }}>
-        <span>{given >= needed ? "已解鎖查看資格" : `再評 ${remaining} 人解鎖你的結果`}</span>
+        {/* 計數單位是「照片張數」不是人數（一人最多 2 張），文案需與實際計算一致 */}
+        <span>{given >= needed ? "已解鎖查看資格" : `再評 ${remaining} 張解鎖你的結果`}</span>
         <span>
           {Math.min(given, needed)}/{needed}
         </span>
@@ -73,6 +74,81 @@ function ScorePad({
   );
 }
 
+const REPORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "not_self", label: "這不是本人／盜用他人照片" },
+  { value: "nsfw", label: "裸露或不適當內容" },
+  { value: "minor", label: "照片主角未成年" },
+  { value: "other", label: "其他問題" },
+];
+
+// 檢舉面板：送出後照片立即下架，並直接跳到下一張。
+function ReportPanel({
+  photoId,
+  onDone,
+}: {
+  photoId: string;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="self-center text-xs underline underline-offset-2"
+        style={{ color: "#B0A496" }}
+      >
+        ⚠ 檢舉這張照片
+      </button>
+    );
+  }
+
+  async function send(reason: string) {
+    setSending(true);
+    const fd = new FormData();
+    fd.set("photoId", photoId);
+    fd.set("reason", reason);
+    await reportPhoto({}, fd);
+    setSending(false);
+    setOpen(false);
+    onDone();
+  }
+
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-2xl p-3"
+      style={{ background: "#FBF8F3", border: "0.5px solid #EBE3D7" }}
+    >
+      <p className="text-xs font-semibold" style={{ color: "#5C5248" }}>
+        檢舉原因（送出後這張照片會立即下架審核）
+      </p>
+      {REPORT_OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          disabled={sending}
+          onClick={() => send(o.value)}
+          className="rounded-xl px-3 py-2 text-left text-xs disabled:opacity-50"
+          style={{ background: "#fff", border: "0.5px solid #EBE3D7", color: "#2C2926" }}
+        >
+          {o.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={sending}
+        onClick={() => setOpen(false)}
+        className="self-center text-xs disabled:opacity-50"
+        style={{ color: "#B0A496" }}
+      >
+        取消
+      </button>
+    </div>
+  );
+}
+
 export function RatingDeck({
   queue,
   given,
@@ -118,7 +194,7 @@ export function RatingDeck({
         <p className="text-sm" style={{ color: "#7C7064" }}>
           {totalGiven >= needed
             ? "你已達解鎖門檻，每晚 21:00 會揭曉你的最新結果。"
-            : `再評 ${needed - totalGiven} 人，就能解鎖查看自己的結果。`}
+            : `再評 ${needed - totalGiven} 張照片，就能解鎖查看自己的結果。`}
         </p>
         <div className="flex gap-3">
           <button
@@ -163,6 +239,12 @@ export function RatingDeck({
         憑第一眼直覺，給幾分？
       </p>
       <ScorePad onScore={(s) => rate(s)} onSkip={() => rate(null, true)} disabled={isPending} />
+
+      <ReportPanel
+        key={current.id}
+        photoId={current.id}
+        onDone={() => setIndex((i) => i + 1)}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import {
   GENDER_LABELS,
   AGE_LABELS,
   REGION_LABELS,
+  MIN_BUCKET_SAMPLE,
   accentColor,
 } from "./constants";
 
@@ -45,6 +46,8 @@ function breakdownBy(
       score: round1(average(scores)),
       sampleSize: scores.length,
     }))
+    // k-匿名：樣本太少的小組不輸出，否則等於公開某個人給的分數。
+    .filter((g) => g.sampleSize >= MIN_BUCKET_SAMPLE)
     .sort((a, b) => b.score - a.score || b.sampleSize - a.sampleSize)
     .map((g, i) => ({
       dimension,

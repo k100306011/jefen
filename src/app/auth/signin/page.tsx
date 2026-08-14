@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
+import { LogoMark } from "@/components/ui/Logo";
 import { DevLogin } from "@/components/app/DevLogin";
 import { WarmGlow } from "@/components/decorative/WarmGlow";
 import { OrganicBlob } from "@/components/decorative/OrganicBlob";
@@ -29,6 +31,7 @@ export default function SignInPage() {
           className="relative card-surface p-8 flex flex-col items-center gap-6 text-center"
         >
           <div>
+            <LogoMark size={48} className="mx-auto mb-3" />
             <h1
               className="text-2xl font-bold"
               style={{ color: "#2C2926", letterSpacing: "-0.02em" }}
@@ -48,8 +51,24 @@ export default function SignInPage() {
 
           {process.env.NODE_ENV !== "production" && <DevLogin />}
 
-          <p className="text-xs" style={{ color: "#B0A496" }}>
-            登入即表示你已閱讀並同意我們的使用條款。
+          <p className="text-xs leading-relaxed" style={{ color: "#B0A496" }}>
+            登入即表示你已閱讀並同意我們的
+            <Link
+              href="/terms"
+              className="underline underline-offset-2"
+              style={{ color: "#7C7064" }}
+            >
+              服務條款
+            </Link>
+            與
+            <Link
+              href="/privacy"
+              className="underline underline-offset-2"
+              style={{ color: "#7C7064" }}
+            >
+              隱私權政策
+            </Link>
+            。
             <br />
             僅限 18 歲以上使用。
           </p>

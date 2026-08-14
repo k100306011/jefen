@@ -72,7 +72,7 @@ export function UploadForm({ isComparison }: { isComparison: boolean }) {
       )}
       {state.ok && (
         <p className="text-sm" style={{ color: "#5E7A4E" }}>
-          上傳成功，已送進評分池！
+          {state.notice ?? "上傳成功，已送進評分池！"}
         </p>
       )}
 

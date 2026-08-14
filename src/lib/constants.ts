@@ -3,6 +3,9 @@ import type { Gender, AgeRange, Region } from "@/types";
 // ── 業務規則 ──
 export const RATINGS_NEEDED_FOR_UNLOCK = 10; // 自己評滿 10 人 → 解鎖查看資格
 export const MIN_RATINGS_FOR_BATCH = 5; // 一張照片被評滿幾次才會生成結果
+// 單一分眾小組（例如「台北」「18–24 歲」）至少要有這麼多評分才顯示，
+// 否則可反推出某個特定使用者給了幾分（k-匿名保護）。
+export const MIN_BUCKET_SAMPLE = 3;
 export const MAX_PHOTOS_PER_USER = 2; // 主照片 + 對比照
 export const REVEAL_HOUR = 21; // 每晚 21:00 揭曉
 export const REVEAL_CRON = "0 21 * * *"; // node-cron 表達式（伺服器時區）

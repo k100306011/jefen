@@ -22,8 +22,9 @@ export function SocialProofEyebrow({ count, className = "" }: SocialProofEyebrow
         animate={{ opacity: [1, 0.4, 1] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       />
+      {/* count 是評分池中的照片數（非人數），文案需與實際計算一致。 */}
       <span className="text-xs font-medium" style={{ color: "#5C5248" }}>
-        今晚 <span className="font-semibold" style={{ color: "#C0396B" }}>{formatted}</span> 人正在被評分
+        目前 <span className="font-semibold" style={{ color: "#C0396B" }}>{formatted}</span> 張照片正在被評分
       </span>
     </div>
   );

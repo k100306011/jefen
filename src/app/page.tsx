@@ -2,6 +2,9 @@ import { SocialProofEyebrow } from "@/components/ui/SocialProofEyebrow";
 import { InsightCard } from "@/components/ui/InsightCard";
 import { HeroDashboard } from "@/components/ui/HeroDashboard";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
+import { Logo } from "@/components/ui/Logo";
+import { SiteFooter } from "@/components/ui/SiteFooter";
+import { StructuredData } from "@/components/ui/StructuredData";
 import { SquiggleUnderline } from "@/components/decorative/SquiggleUnderline";
 import { WarmGlow } from "@/components/decorative/WarmGlow";
 import { OrganicBlob } from "@/components/decorative/OrganicBlob";
@@ -36,22 +39,18 @@ const insightCards = [
 
 export default async function LandingPage() {
   const stats = await getSiteStats();
-  // 冷啟動期設展示下限，避免「0 人」的空城感
-  const onlineCount = Math.max(stats.photosInPool, 36);
+  // 只呈現真實數字；沒有照片時不顯示這個徽章（不捏造社會證明）。
+  const photosInPool = stats.photosInPool;
   return (
     <div
       className="min-h-screen"
       style={{ background: "linear-gradient(160deg, #FBF8F3 0%, #F4EFE7 100%)" }}
     >
+      <StructuredData />
       {/* ── Nav ── */}
       <header className="relative z-10 flex items-center justify-between px-5 py-4 md:px-10">
         <div className="flex items-center gap-2">
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{ color: "#2C2926" }}
-          >
-            幾分
-          </span>
+          <Logo size={30} />
           <span
             className="rounded-full px-2 py-0.5 text-xs font-medium"
             style={{ background: "#EBE3D7", color: "#9C8E7E" }}
@@ -59,7 +58,7 @@ export default async function LandingPage() {
             beta
           </span>
         </div>
-        <SocialProofEyebrow count={onlineCount} />
+        {photosInPool > 0 && <SocialProofEyebrow count={photosInPool} />}
       </header>
 
       <main>
@@ -195,7 +194,7 @@ export default async function LandingPage() {
               {
                 n: "2",
                 title: "幫別人評分",
-                desc: "你評 10 人，就有 10 個人評你——1:1 互惠，公平公正",
+                desc: "評滿 10 張照片解鎖你的結果——1:1 互惠，公平公正",
               },
               {
                 n: "3",
@@ -257,12 +256,7 @@ export default async function LandingPage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer
-        className="px-5 pb-8 pt-4 text-center text-xs"
-        style={{ color: "#B0A496", borderTop: "0.5px solid #EBE3D7" }}
-      >
-        © 2025 幾分 · 聚合分眾評分，保護你的隱私
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

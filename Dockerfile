@@ -17,11 +17,22 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+
+# NEXT_PUBLIC_* 是「建置期」注入的，必須在 build 前就存在。
+# .dockerignore 排除了 .env.*，所以要靠 build arg 傳進來（見 docker-compose.yml 的 build.args）。
+# 未傳時退回正式網域，與 src/lib/site.ts 的預設值一致。
+ARG NEXT_PUBLIC_SITE_URL=https://jifen.space
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 RUN npm run build
 
 # ---- runner：精簡的正式環境映像 ----
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
+# sqlite3 CLI：供維運直接查／改資料庫（目前還沒有管理後台，處理檢舉與待審照片要靠它）
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends sqlite3 \
+  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATA_DIR=/app/data

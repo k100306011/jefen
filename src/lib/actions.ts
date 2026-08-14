@@ -12,9 +12,10 @@ import {
   MAX_UPLOAD_BYTES,
 } from "./storage";
 import { moderatePhoto } from "./moderation";
+import { rateLimit, LIMITS } from "./rate-limit";
 import { MAX_PHOTOS_PER_USER, SCORE_MIN, SCORE_MAX } from "./constants";
 
-export type ActionState = { ok?: boolean; error?: string };
+export type ActionState = { ok?: boolean; error?: string; notice?: string };
 
 const GENDERS = ["male", "female", "non_binary", "prefer_not_to_say"] as const;
 const AGES = ["18-24", "25-30", "31-40", "41-50", "51+"] as const;
@@ -30,6 +31,17 @@ const REGIONS = [
 async function getSessionUserId(): Promise<string | null> {
   const session = await auth();
   return session?.user?.id ?? null;
+}
+
+// 超出額度時回傳統一的錯誤訊息，否則回傳 null。
+function limitError(
+  action: keyof typeof LIMITS,
+  userId: string,
+): ActionState | null {
+  const { limit, windowSec } = LIMITS[action];
+  const res = rateLimit(`${action}:${userId}`, limit, windowSec);
+  if (res.ok) return null;
+  return { error: `操作太頻繁，請於 ${res.retryAfterSec} 秒後再試` };
 }
 
 // ─────────────────────────────────────────────
@@ -85,6 +97,9 @@ export async function uploadPhoto(
   const userId = await getSessionUserId();
   if (!userId) return { error: "請先登入" };
 
+  const limited = limitError("upload", userId);
+  if (limited) return limited;
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.onboardedAt) return { error: "請先完成基本資料" };
 
@@ -118,7 +133,9 @@ export async function uploadPhoto(
 
   // AI 守門員審核
   const moderation = await moderatePhoto(bytes.toString("base64"), file.type);
-  if (!moderation.passed) {
+
+  // 明確違規 → 直接拒絕，不落地檔案。
+  if (!moderation.passed && !moderation.requiresManualReview) {
     const reasons: Record<string, string> = {
       nsfw: "照片含不適當內容",
       underage: "無法確認照片主角已成年",
@@ -130,6 +147,9 @@ export async function uploadPhoto(
     };
   }
 
+  // 無法自動判定（審核服務未設定或異常）→ 收下但不進評分池，等人工複審。
+  const pendingReview = moderation.requiresManualReview === true;
+
   const storageKey = await savePhotoFile(bytes, file.type);
   await prisma.photo.create({
     data: {
@@ -138,15 +158,22 @@ export async function uploadPhoto(
       mimeType: file.type,
       label,
       slot, // 0 = 主照片，1 = 對比照
-      status: "active",
-      isActive: true,
+      status: pendingReview ? "pending_review" : "active",
+      isActive: !pendingReview,
+      moderationReason: pendingReview ? "unreviewed" : null,
     },
   });
 
   revalidatePath("/upload");
   revalidatePath("/results");
   revalidatePath("/dashboard");
-  return { ok: true };
+  return pendingReview
+    ? {
+        ok: true,
+        notice:
+          "照片已收到，正在等待審核。通過後才會進入評分池，你會在此頁看到狀態變更。",
+      }
+    : { ok: true };
 }
 
 // ─────────────────────────────────────────────
@@ -158,6 +185,9 @@ export async function submitRating(
 ): Promise<ActionState> {
   const userId = await getSessionUserId();
   if (!userId) return { error: "請先登入" };
+
+  const limited = limitError("rating", userId);
+  if (limited) return limited;
 
   const rater = await prisma.user.findUnique({ where: { id: userId } });
   if (!rater?.onboardedAt) return { error: "請先完成基本資料" };
@@ -209,6 +239,67 @@ export async function submitRating(
 }
 
 // ─────────────────────────────────────────────
+// 檢舉照片：任何登入者都能檢舉評分池中的照片。
+// 一筆檢舉即立刻下架該照片等人工複審——保護當事人優先。
+// ─────────────────────────────────────────────
+const REPORT_REASONS = ["not_self", "nsfw", "minor", "other"] as const;
+
+export async function reportPhoto(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const userId = await getSessionUserId();
+  if (!userId) return { error: "請先登入" };
+
+  const limited = limitError("report", userId);
+  if (limited) return limited;
+
+  const photoId = String(formData.get("photoId") ?? "");
+  if (!photoId) return { error: "缺少照片資訊" };
+
+  const parsed = z.enum(REPORT_REASONS).safeParse(formData.get("reason"));
+  if (!parsed.success) return { error: "請選擇檢舉原因" };
+
+  const note = String(formData.get("note") ?? "")
+    .trim()
+    .slice(0, 200);
+
+  const photo = await prisma.photo.findUnique({ where: { id: photoId } });
+  if (!photo) return { error: "找不到這張照片" };
+  if (photo.userId === userId) return { error: "不能檢舉自己的照片" };
+
+  // 重複檢舉視為已受理（不洩漏狀態、也不報錯）。
+  try {
+    await prisma.photoReport.create({
+      data: {
+        photoId,
+        reporterId: userId,
+        reason: parsed.data,
+        note: note.length > 0 ? note : null,
+      },
+    });
+  } catch {
+    return { ok: true, notice: "你已檢舉過這張照片，我們正在處理。" };
+  }
+
+  // 立即下架，等人工複審。
+  await prisma.photo.update({
+    where: { id: photoId },
+    data: {
+      status: "flagged",
+      isActive: false,
+      moderationReason: `reported:${parsed.data}`,
+    },
+  });
+
+  revalidatePath("/rate");
+  return {
+    ok: true,
+    notice: "已收到你的檢舉，這張照片已下架等待審核。謝謝你協助維護社群安全。",
+  };
+}
+
+// ─────────────────────────────────────────────
 // 更新分眾屬性（設定頁）
 // ─────────────────────────────────────────────
 export async function updateProfile(
@@ -217,6 +308,9 @@ export async function updateProfile(
 ): Promise<ActionState> {
   const userId = await getSessionUserId();
   if (!userId) return { error: "請先登入" };
+
+  const limited = limitError("profile", userId);
+  if (limited) return limited;
 
   const parsed = onboardingSchema.safeParse({
     gender: formData.get("gender"),

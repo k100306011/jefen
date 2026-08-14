@@ -35,7 +35,8 @@ model User {
   accounts     Account[]
   sessions     Session[]
   photos       Photo[]
-  ratingsGiven Rating[]  @relation("RatingsGiven")
+  ratingsGiven Rating[]      @relation("RatingsGiven")
+  reportsMade  PhotoReport[] @relation("ReportsMade")
 }
 
 model Account {
@@ -97,9 +98,28 @@ model Photo {
 
   ratings Rating[]
   batches ResultBatch[]
+  reports PhotoReport[]
 
   @@index([userId])
   @@index([status, isActive])
+}
+
+// 使用者檢舉：任何登入者可檢舉評分池中的照片（非本人、裸露、未成年…）。
+// 一筆檢舉即立刻把照片下架（isActive=false, status=flagged）等人工複審——
+// 保護當事人優先於維持照片曝光。
+model PhotoReport {
+  id         String  @id @default(cuid())
+  photoId    String
+  photo      Photo   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User    @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     String // not_self | nsfw | minor | other
+  note       String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([reporterId, photoId])
+  @@index([photoId])
 }
 
 model Rating {

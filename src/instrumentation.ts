@@ -33,4 +33,14 @@ export async function register() {
   );
 
   console.log(`[cron] nightly reveal scheduled (${REVEAL_CRON}, tz=${timezone})`);
+
+  // 補跑：容器若在 21:00 沒開機，那天的揭曉會被跳過。啟動時補檢查一次。
+  // revealAll 具冪等性（沒有新評分就不產生批次），所以補跑是安全的。
+  try {
+    const { revealIfMissed } = await import("@/lib/reveal");
+    const summary = await revealIfMissed();
+    if (summary) console.log("[cron] catch-up reveal done:", summary);
+  } catch (err) {
+    console.error("[cron] catch-up reveal failed:", err);
+  }
 }

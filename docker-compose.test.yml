@@ -1,0 +1,5 @@
+# 本機 Docker 測試用（不啟 cloudflared，對外開 3001 避免與 dev 衝突）
+services:
+  app:
+    ports:
+      - "3001:3000"

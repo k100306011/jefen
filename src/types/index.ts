@@ -90,6 +90,18 @@ export interface UploadResult {
 
 export interface ModerationResult {
   passed: boolean;
-  reason?: "nsfw" | "underage" | "not_real_person" | "low_quality" | "ok";
+  /**
+   * 無法自動判定（未設定審核服務、服務異常或回傳格式不正確）。
+   * 此時照片一律不進評分池，改為 pending_review 等人工複審——
+   * 絕不因為審核服務不可用就放行。
+   */
+  requiresManualReview?: boolean;
+  reason?:
+    | "nsfw"
+    | "underage"
+    | "not_real_person"
+    | "low_quality"
+    | "unreviewed"
+    | "ok";
   confidence: number;
 }

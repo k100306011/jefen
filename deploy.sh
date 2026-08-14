@@ -13,7 +13,14 @@ echo "==> 拉取最新程式碼（若為 git 倉庫）"
 git pull --ff-only 2>/dev/null || echo "   （非 git 倉庫或無更新，略過）"
 
 echo "==> 建置並啟動容器"
-docker compose up -d --build
+if grep -qE '^TUNNEL_TOKEN=.+$' .env.production 2>/dev/null; then
+  docker compose --profile tunnel up -d --build
+elif [ -f cloudflared/config.yml ]; then
+  docker compose --profile tunnel-creds up -d --build
+else
+  echo "   （未設定 TUNNEL_TOKEN，僅啟動 app）"
+  docker compose up -d --build app
+fi
 
 echo "==> 目前狀態"
 sleep 5

@@ -75,10 +75,10 @@ export default async function ResultsPage() {
             🔒
           </span>
           <h2 className="text-lg font-bold" style={{ color: "#2C2926" }}>
-            再評 {remaining} 人解鎖
+            再評 {remaining} 張解鎖
           </h2>
           <p className="text-sm" style={{ color: "#7C7064" }}>
-            互惠機制：先幫 {progress.needed} 個人評分，才能查看別人對你的評價。
+            互惠機制：先幫 {progress.needed} 張照片評分，才能查看別人對你的評價。
           </p>
           <Link
             href="/rate"

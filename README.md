@@ -2,6 +2,13 @@
 
 真人互評外貌分數的網頁應用。上傳照片、互相評分，看自己在**不同性別／年齡／地區眼中**的分眾定位、百分位，以及前後對比的成長。
 
+> **接手這個專案？先讀這三份：**
+> | 文件 | 內容 |
+> |---|---|
+> | [docs/PRODUCT.md](docs/PRODUCT.md) | 初衷、設計原則、使用者故事、業務規則、冷啟動經濟學 |
+> | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構、資料模型、關鍵流程、已知陷阱、驗證狀態 |
+> | [docs/LAUNCH.md](docs/LAUNCH.md) | 上線目標、阻塞項、逐步步驟、最終檢查清單 |
+
 > 核心玩法：上傳照片 → 幫別人評分（1:1 互惠，評 10 人解鎖）→ 每晚 21:00 揭曉你的分眾結果 → 上傳對比照看成長。
 
 ## 技術棧
@@ -30,6 +37,7 @@ npm run dev
 | --- | --- | --- |
 | `AUTH_SECRET` | 正式環境必填 | next-auth 加密金鑰，`openssl rand -base64 32` |
 | `AUTH_URL` | 建議 | 正式網址，供 OAuth 回呼，例 `https://jifen.example.com` |
+| `NEXT_PUBLIC_SITE_URL` | 有預設 | 對外公開網址，供 SEO（sitemap / robots / OG 分享圖 / canonical）。預設 `https://jifen.space`；**於 build 階段注入**，換網域需重新 build |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | 正式環境必填 | Google OAuth；回呼網址設為 `<AUTH_URL>/api/auth/callback/google` |
 | `CRON_SECRET` | 選填 | 外部排程器觸發 `/api/cron/reveal` 用；內建排程不需要 |
 | `GEMINI_API_KEY` | 選填 | 圖片審核；未設定時開發環境會略過審核 |
@@ -60,6 +68,21 @@ docker compose up -d --build
 curl -X POST https://your-domain/api/cron/reveal \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
+
+## SEO 與法律頁面
+
+上線所需的搜尋引擎與合規頁面皆已內建，且由 `src/lib/site.ts` 統一管理網址、品牌與聯絡資訊：
+
+- **中繼資料**：根 `layout.tsx` 設定 `metadataBase`、Open Graph、Twitter card、canonical、robots 指示。
+- **`/sitemap.xml`、`/robots.txt`**：自動生成（`app/sitemap.ts`、`app/robots.ts`）；robots 已擋掉登入後頁面與 `/api`。
+- **`/manifest.webmanifest`**：PWA 安裝資訊（`app/manifest.ts`）。
+- **品牌符號**：`src/lib/logo.ts` 定義品牌 logo（三環分數計，呼應 `RingGauge`）的幾何常數，`src/components/ui/Logo.tsx` 提供 `<Logo>` / `<LogoMark>`；favicon（`app/icon.svg`）、apple-icon、OG 圖都共用同一個符號。
+- **社群分享圖**：`app/opengraph-image.tsx` 以 `next/og` 動態生成（品牌符號 + 標語），中文字型使用 `assets/` 內附的 Noto Sans TC 子集（建置時離線可用，**請勿刪除 `assets/`**）。`app/apple-icon.tsx` 為 iOS 主畫面圖示。
+- **結構化資料**：落地頁輸出 schema.org 的 `WebSite` / `Organization`（JSON-LD）。
+- **法律頁面**：`/privacy`（隱私權政策）、`/terms`（服務條款），公開可存取；登入頁與頁尾均已連結。
+- **安全性標頭**：`next.config.ts` 設定 HSTS、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy`，並關閉 `X-Powered-By`。
+
+> 換網域：設定 `NEXT_PUBLIC_SITE_URL` 後重新 build；法律條文內容如需調整，改 `src/app/(legal)/` 下的頁面與 `src/lib/site.ts` 的聯絡資訊即可。
 
 ## 常用指令
 

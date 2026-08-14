@@ -177,17 +177,24 @@ const api = await page.evaluate(async () => {
   const stats = await fetch("/api/stats").then((r) => r.json());
   const health = await fetch("/api/healthz").then((r) => r.json());
   const cronNoAuth = await fetch("/api/cron/reveal", { method: "POST" }).then((r) => r.status);
-  const cron = await fetch("/api/cron/reveal?key=dev-cron-secret", {
+  // 密鑰只接受 Authorization 標頭（查詢字串會洩漏進紀錄檔）
+  const cronQueryString = await fetch("/api/cron/reveal?key=dev-cron-secret", {
     method: "POST",
+  }).then((r) => r.status);
+  const cron = await fetch("/api/cron/reveal", {
+    method: "POST",
+    headers: { Authorization: "Bearer dev-cron-secret" },
   }).then((r) => (r.ok ? r.json() : { failed: r.status }));
-  return { stats, health, cronNoAuth, cron };
+  return { stats, health, cronNoAuth, cronQueryString, cron };
 });
 if (!api.health.ok) fail("healthz 失敗");
 if (typeof api.stats.photosInPool !== "number") fail("stats 格式錯誤");
 if (api.cronNoAuth !== 401) fail(`cron 未帶密鑰應 401，實際 ${api.cronNoAuth}`);
+if (api.cronQueryString !== 401)
+  fail(`cron 用 ?key= 查詢字串應被拒（401），實際 ${api.cronQueryString}`);
 if (!api.cron.ok) fail(`cron 揭曉失敗：${JSON.stringify(api.cron)}`);
 pass(
-  `API 全通過：stats(pool=${api.stats.photosInPool}) healthz cron(未授權=401, 揭曉 ${api.cron.revealedPhotos} 張)`,
+  `API 全通過：stats(pool=${api.stats.photosInPool}) healthz cron(未授權=401, ?key=401, 揭曉 ${api.cron.revealedPhotos} 張)`,
 );
 
 // 9. 揭曉後結果頁應出現分眾結果（本帳號照片已被 seed？不一定 — 檢查 demo 帳號邏輯改為：確認資料庫有新批次即可，由 cron 回傳驗證）

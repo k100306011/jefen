@@ -105,8 +105,8 @@ export default async function DashboardPage() {
           <p className="text-sm" style={{ color: "#7C7064" }}>
             {progress.unlocked
               ? "已解鎖查看資格"
-              : `再評 ${progress.needed - progress.given} 人解鎖結果`}
-            {rateable > 0 && ` · ${rateable} 人可評`}
+              : `再評 ${progress.needed - progress.given} 張解鎖結果`}
+            {rateable > 0 && ` · ${rateable} 張可評`}
           </p>
           <Link
             href="/rate"

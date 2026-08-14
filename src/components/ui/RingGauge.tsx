@@ -14,6 +14,12 @@ interface RingGaugeProps {
   percentileRank: number;
   size?: number;
   animated?: boolean;
+  /**
+   * 百分位的說明文字。預設「贏過全站」——因為 percentileRank 是與
+   * 全站所有達門檻照片比較（見 lib/reveal.ts），並非同齡族群。
+   * 若日後改成分齡計算，再傳入「贏過同齡」。
+   */
+  percentileCaption?: string;
 }
 
 function RingArc({
@@ -93,6 +99,7 @@ export function RingGauge({
   percentileRank,
   size = 200,
   animated = false,
+  percentileCaption = "贏過全站",
 }: RingGaugeProps) {
   const cx = size / 2;
   const cy = size / 2;
@@ -144,7 +151,7 @@ export function RingGauge({
             lineHeight: 1.2,
           }}
         >
-          贏過同齡
+          {percentileCaption}
         </span>
         <span
           className="font-semibold"
