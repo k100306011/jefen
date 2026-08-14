@@ -14,6 +14,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 技術架構、資料模型、關鍵流程、**已知陷阱**、驗證狀態 |
 | [docs/LAUNCH.md](docs/LAUNCH.md) | 上線目標、阻塞項、逐步上線步驟、最終檢查清單 |
 | [docs/DESIGN-REFERENCE.md](docs/DESIGN-REFERENCE.md) | 設計參考調研（DESCENT）。**🛑 暫緩，未採用——維持原本視覺，勿依此改配色** |
+| [docs/HANDOFF-PROMPT.md](docs/HANDOFF-PROMPT.md) | 給新 session 的接手提示詞範本（Evan 用） |
 
 ## 溝通與工作方式
 
