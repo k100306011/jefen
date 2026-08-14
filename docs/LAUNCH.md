@@ -1,6 +1,19 @@
 # 幾分 — 上線計畫
 
-> 狀態日期：**2026-08-07**。產品脈絡看 [PRODUCT.md](./PRODUCT.md)，技術細節看 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+> 狀態日期：**2026-08-14**。產品脈絡看 [PRODUCT.md](./PRODUCT.md)，技術細節看 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+
+## 📌 交接狀態（接手先看這段）
+
+**程式碼狀態：可上線。** 已 push 到 `main`，build／lint／e2e 全綠。
+
+- ✅ **已完成**：核心流程（註冊→上傳→評分→解鎖→揭曉→刪帳號）、SEO 全套、法律頁、品牌識別、安全修復（審核 fail-closed／檢舉下架／揭曉冪等／k-匿名／rate limit／cron 加固）、部署修復
+- ❌ **唯一還沒寫的程式**：`/admin` 管理後台（處理檢舉與待審照片）→ 見下方 **B4**
+- 🛑 **視覺維持原狀**：`docs/DESIGN-REFERENCE.md` 那份參考**已暫緩、未採用**，請勿據此改配色
+- ⚠️ **從未實測**：Docker 映像建置（開發環境連不到 Docker Hub）
+
+**下一步優先序**：B4 管理後台 → B1 Gemini key → S1–S6 上線 → B5 種子使用者
+
+---
 
 ## 上線目標（Evan 定義）
 

@@ -13,7 +13,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | [docs/PRODUCT.md](docs/PRODUCT.md) | 初衷、設計原則、使用者故事、業務規則、**冷啟動經濟學**、Non-goals |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 技術架構、資料模型、關鍵流程、**已知陷阱**、驗證狀態 |
 | [docs/LAUNCH.md](docs/LAUNCH.md) | 上線目標、阻塞項、逐步上線步驟、最終檢查清單 |
-| [docs/DESIGN-REFERENCE.md](docs/DESIGN-REFERENCE.md) | 老闆指定的設計參考（DESCENT）：精確色票、字體處理、該學／不該學什麼 |
+| [docs/DESIGN-REFERENCE.md](docs/DESIGN-REFERENCE.md) | 設計參考調研（DESCENT）。**🛑 暫緩，未採用——維持原本視覺，勿依此改配色** |
 
 ## 溝通與工作方式
 
